@@ -77,7 +77,7 @@ public class GUI_init {
         
         controlPanel.add(Box.createVerticalStrut(10));
         controlPanel.add(resetZoomBtn);*/
-        JCheckBox pointToolTips = new JCheckBox("Plot Tooltips");
+        JCheckBox pointToolTips = new JCheckBox("Point Tooltips");
         
 
         // 4. Bottom input panel (for text input)
@@ -168,7 +168,7 @@ public class GUI_init {
             leftPanel,
             chartPanel
         );
-        splitPane.setDividerLocation(300);
+        splitPane.setDividerLocation(350);
         splitPane.setResizeWeight(0);
 
         // 7. Main frame
