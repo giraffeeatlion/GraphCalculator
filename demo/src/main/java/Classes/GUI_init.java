@@ -6,34 +6,31 @@ import org.jfree.chart.ChartMouseEvent;
 import javax.swing.*;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
 //import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import Classes.ControlPanel;
+
 import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartMouseEvent;
-import org.jfree.chart.ChartMouseListener;
-import org.jfree.chart.ChartPanel;
+
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.event.ChartProgressEvent;
+import org.jfree.chart.entity.ChartEntity;
+import org.jfree.chart.entity.XYItemEntity;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.w3c.dom.events.MouseEvent;
 
-import edu.jas.application.Dimension;
 
 public class GUI_init {
     //private boolean dragging = false;
+        public static JFreeChart chart;
     public GUI_init(){
         //XYSeries series = new XYSeries("f(x)");
         XYSeriesCollection dataset = new XYSeriesCollection();
 
         // 2. Create chart
-        JFreeChart chart = ChartFactory.createXYLineChart(
+        chart = ChartFactory.createXYLineChart(
             "Function Plot", "X", "Y", dataset
         );
         //JFreeChart("Overlayed Transparent Curves", JFreeChart.DEFAULT_TITLE_FONT, plot, true);
@@ -47,26 +44,13 @@ public class GUI_init {
 
         ChartPanel chartPanel = new ChartPanel(chart);
         chartPanel.setMouseZoomable(false); // enables zoom by mouse drag
-        chartPanel.setMouseWheelEnabled(true);
-        chartPanel.setMouseWheelEnabled(true);    // Zoom with scroll
+        chartPanel.setMouseWheelEnabled(true);   // Zoom with scroll
         //chartPanel.setMouseZoomable(true);        // Drag to zoom
         chartPanel.setDomainZoomable(true);       // X-axis
         chartPanel.setRangeZoomable(true);
         chartPanel.setDisplayToolTips(true);
-        //((XYPlot) chartPanel).setDomainPannable(true);
-        //((XYPlot) chartPanel).setRangePannable(true);
-        //boolean dragging = false; 
-        chartPanel.addChartMouseListener(new ChartMouseListener() {
-            @Override
-            public void chartMouseClicked(ChartMouseEvent event) {
-                // You can leave this empty or use it if needed
-            }
-
-            @Override
-            public void chartMouseMoved(ChartMouseEvent event) {
-                ControlPanel.zoom(chart,dataset);
-            }
-        });
+        chartPanel.setInitialDelay(0);
+        
 
         XYPlot plot = chart.getXYPlot();
         plot.setDomainGridlinesVisible(true); // X-axis grid lines
@@ -80,10 +64,8 @@ public class GUI_init {
         yAxis.setVisible(true);
         // 3. Top control panel with buttons
         //JPanel controlPanel = new JPanel(new GridLayout(1, 3, 10, 0));
-        JButton addFunctionBtn = new JButton("Add Function");
         JButton plotGraphBtn = new JButton("Plot Graph");
-        JButton resetZoomBtn = new JButton("Reset Zoom");
-        JButton deleteBtn = new JButton("Delete");
+
         //JButton setZoomBtn = new JButton("Set Zoom Manually");
         JPanel controlPanel = new JPanel();
         /*controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
@@ -95,13 +77,12 @@ public class GUI_init {
         
         controlPanel.add(Box.createVerticalStrut(10));
         controlPanel.add(resetZoomBtn);*/
-        
+        JCheckBox pointToolTips = new JCheckBox("Plot Tooltips");
         
 
         // 4. Bottom input panel (for text input)
         JPanel functionInputPanel = new JPanel();
         functionInputPanel.setLayout(new BoxLayout(functionInputPanel, BoxLayout.Y_AXIS));
-        JLabel label = new JLabel("Enter Function (e.g., x^2 + 3):");
         ArrayList<JTextField> functionFields = new ArrayList<>();
         JButton actionMenuButton = new JButton("Actions");
         JPopupMenu popupMenu = new JPopupMenu();
@@ -116,9 +97,20 @@ public class GUI_init {
         popupMenu.add(setZoomManual);
 
         setZoomManual.addActionListener(e->ControlPanel.manualZoom(chart,dataset));
-        addItem.addActionListener(e -> ControlPanel.addFunction(functionInputPanel, functionFields,dataset));
+        addItem.addActionListener(e -> ControlPanel.addToPanel(functionInputPanel, functionFields,dataset));
         plotItem.addActionListener(e -> ControlPanel.plotAll(functionFields, dataset, chart));
         resetItem.addActionListener(e -> ControlPanel.resetZoom(chart, dataset));
+        pointToolTips.addActionListener((ActionListener) new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(pointToolTips.isSelected())
+                    Plotter.EnableToolTips = true;
+                else
+                    Plotter.EnableToolTips = false;
+                ControlPanel.plotAll(functionFields, dataset, chart);
+            }
+        });
+        
         //deleteBtn.addActionListener(e->ControlPanel.delete(chart, dataset));
 
         actionMenuButton.addActionListener(e -> popupMenu.show(actionMenuButton, 0, actionMenuButton.getHeight()));
@@ -126,6 +118,7 @@ public class GUI_init {
         
         controlPanel.add(actionMenuButton);
         controlPanel.add(plotGraphBtn);
+        controlPanel.add(pointToolTips);
        // controlPanel.add(deleteBtn);
         //controlPanel.add(setZoomBtn);
 /*controlPanel.add(actionMenuButton);
@@ -134,6 +127,20 @@ public class GUI_init {
         plotGraphBtn.addActionListener(e->ControlPanel.plotAll(functionFields,dataset,chart));
         resetZoomBtn.addActionListener(e->ControlPanel.resetZoom(chart,dataset));*/
         plotGraphBtn.addActionListener(e->ControlPanel.plotAll(functionFields,dataset,chart));
+        chartPanel.addChartMouseListener(new ChartMouseListener() {
+            
+            @Override
+            public void chartMouseClicked(ChartMouseEvent event) {
+                //ControlPanel.zoom(functionFields,dataset,chart);
+                
+            }
+
+            @Override
+            public void chartMouseMoved(ChartMouseEvent event) {
+                ControlPanel.zoom(chart,dataset);   
+                //
+            }
+        });
         
 
 

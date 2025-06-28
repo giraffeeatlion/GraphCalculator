@@ -1,10 +1,7 @@
 package Classes;
 
 import org.matheclipse.core.interfaces.IExpr;
-import org.matheclipse.core.eval.EvalUtilities;
 import org.matheclipse.core.eval.ExprEvaluator;
-import org.matheclipse.core.expression.F;
-import org.matheclipse.core.interfaces.IExpr;
 import Interfaces.FunctionModel;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
