@@ -8,12 +8,7 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 import net.objecthunter.exp4j.function.Function;
 
 public class ExpressionFunction implements FunctionModel {
-    Function sec = new Function("sec", 1) {
-    @Override
-    public double apply(double... args) {
-        return 1.0 / Math.cos(args[0]);
-    }
-};
+
     private Expression expression;
     private String expressionString;
     //private final Expression expression;

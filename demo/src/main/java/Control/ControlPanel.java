@@ -1,27 +1,27 @@
-package Classes;
+package Control;
 
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.swing.JButton;
-//import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
+
+import Classes.ExpressionFunction;
+import Classes.Plotter;
 
 
 
 public class ControlPanel {
     private static List<ExpressionFunction> expressions;
-    private static int count = 0;
+    private static List<ExpressionFunction> derivativeExpressions;
+   // private static int count = 0;
     
     public static class FunctionRow {
         private  JTextField functionField;
@@ -103,7 +103,8 @@ public class ControlPanel {
             inputPanel.remove(row);
             inputPanel.revalidate();
             inputPanel.repaint();
-            count--;
+            ControlPanel.plotAll(functionFields, dataset, GUI_init.chart);
+           // count--;
         }
     }
     public static void addToPanel(JPanel inputPanel, 
@@ -118,22 +119,25 @@ public class ControlPanel {
 
     
 
-    public static void plotAll(ArrayList<JTextField> funcFields,XYSeriesCollection dataset,JFreeChart chart)
+    public static void plotAll(List<JTextField> functionFields,XYSeriesCollection dataset,JFreeChart chart)
     {
         expressions = new ArrayList<>();
-
-        for (JTextField field : funcFields) {
+        derivativeExpressions = new ArrayList<>();
+        for (JTextField field : functionFields) {
             String expr = field.getText(); // always gets current text
             System.out.println(expr);
-            expressions.add(new ExpressionFunction(expr));
+            ExpressionFunction function = new ExpressionFunction(expr);
+            expressions.add(function);
+            expr = ExpressionFunction.derivative(expr);
+            derivativeExpressions.add(new ExpressionFunction(expr));
         }
 
-        Plotter.plotExpressions(dataset, expressions, chart);
+        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
     }
 
     public static void zoom(JFreeChart chart,XYSeriesCollection dataset)
     {
-        Plotter.plotExpressions(dataset, expressions, chart);
+        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
     }
 
     public static void resetZoom(JFreeChart chart,XYSeriesCollection dataset)
@@ -143,7 +147,7 @@ public class ControlPanel {
     // Set default fixed bounds (X: -10 to 10, Y: -10 to 10)
         plot.getDomainAxis().setRange(-10, 10);
         plot.getRangeAxis().setRange(-10, 10);
-        Plotter.plotExpressions(dataset, expressions, chart);
+        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
     }
 
     public static void manualZoom(JFreeChart chart, XYSeriesCollection dataset)
@@ -177,7 +181,7 @@ public class ControlPanel {
                 XYPlot plot = chart.getXYPlot();
                 plot.getDomainAxis().setRange(xMin, xMax);
                 plot.getRangeAxis().setRange(yMin, yMax);
-                Plotter.plotExpressions(dataset, expressions, chart);
+                Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Invalid input. Please enter valid numbers.");
             }
@@ -195,5 +199,10 @@ public class ControlPanel {
        functionFields.remove(field);
        ControlPanel.plotAll(functionFields, dataset, GUI_init.chart);
 
+    }
+    public static void togglePoints(List<JTextField> functionFields,XYSeriesCollection dataset,JFreeChart chart)
+    {
+        Plotter.EnableZeroesSolver = !Plotter.EnableZeroesSolver;
+        ControlPanel.plotAll(functionFields, dataset, GUI_init.chart);
     }
 }
