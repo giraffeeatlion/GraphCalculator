@@ -1,11 +1,14 @@
 package Classes;
 
 import java.awt.BasicStroke;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.labels.XYToolTipGenerator;
+import org.jfree.chart.plot.DatasetRenderingOrder;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
@@ -20,33 +23,50 @@ public class Plotter {
     static double points = 0;
     public static boolean EnableToolTips = false;
     public static boolean EnableZeroesSolver = false;
+    public static boolean EnableSaddlePointSolver = false;
+    public static double total_points = 500;
+    private static XYSeriesCollection pointDataset = new XYSeriesCollection();
+    private static XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer(true,false);
+    private static XYLineAndShapeRenderer pointRenderer = new XYLineAndShapeRenderer(false, true); // points only
     private static final double THRESHOLD = 5.0;
-    public static void plotExpressions(XYSeriesCollection dataset, List<ExpressionFunction> functions, JFreeChart chart,List<ExpressionFunction> derivativeFunctions) {
-        
+    static Color[] colors = {
+            Color.RED, Color.BLUE, Color.GREEN, Color.ORANGE, Color.MAGENTA,
+            Color.CYAN, Color.PINK, Color.YELLOW, Color.GRAY, Color.DARK_GRAY
+        };
+    private static Map<String, Boolean> seriesCheck = new HashMap<>();
+    public static void plotExpressions(XYSeriesCollection dataset, List<ExpressionFunction> functions, JFreeChart chart,List<ExpressionFunction> derivativeFunctions,List<ExpressionFunction> doubleDerExprresions) {
+
         double xMin = chart.getXYPlot().getDomainAxis().getLowerBound();
         double xMax = chart.getXYPlot().getDomainAxis().getUpperBound();
-        XYSeriesCollection pointDataset = new XYSeriesCollection();
         chart.getXYPlot().getDomainAxis().setAutoRange(false); // X-axis
         chart.getXYPlot().getRangeAxis().setAutoRange(false); 
         dataset.removeAllSeries();
+        pointDataset.removeAllSeries();
         points = 0;
         xMaxBound = xMax;
         xMinBound = xMin;
+        seriesCheck.clear();
         for (int i = 0; i < functions.size(); i++) {
             ExpressionFunction func = functions.get(i);
+            if(seriesCheck.get(func.getExpressionString()) != null)
+                continue;
+            seriesCheck.put(func.getExpressionString(),true);
             ExpressionFunction derFunc = derivativeFunctions.get(i);
+            ExpressionFunction doubleDerFunc = doubleDerExprresions.get(i);
             double prevY = 0;
             double prevX = xMin;
+            double prevY_prime = 0;
             XYSeries series = new XYSeries(func.getExpressionString());
             XYSeries pointSeries = null;
-            if(EnableZeroesSolver)
+            if(EnableZeroesSolver || EnableSaddlePointSolver)
                 pointSeries = new XYSeries(func.getExpressionString()+": zeroes");
-            double resolution = (xMax - xMin)/28000;
+            double resolution = (xMax - xMin)/total_points;
             if(resolution==0)
                 return;
                 for (double x = xMin; x <= xMax; x += resolution) {
                     try {
                         double y = func.evaluate(x);
+                        double y_prime = derFunc.evaluate(x);
                         if (!Double.isNaN(y) && !Double.isInfinite(y)) {
                             //if(Math.abs(prev-y)>THRESHOLD && y*prev<0)
                             /*{   
@@ -55,17 +75,28 @@ public class Plotter {
                             }*/
                             //System.out.println(prev + ":prev | y:" + y);
                             //prev = y;
-                            if(EnableZeroesSolver)
+                            if(EnableZeroesSolver && THRESHOLD > Math.abs(y-prevY))
                             {
-                                if(prevY*y < 0)
+                                if(prevY*y <= 0)
                                 {
-                                    double intersectionPoint = Solver.zeroes_solver(func, derFunc, prevX, x);
-                                    pointSeries.add(intersectionPoint,0);
+                                    double intersectionPoint = Solver.solve(func, derFunc, prevX, x);
+                                    if(Math.abs(func.evaluate(intersectionPoint))<0.01)
+                                        pointSeries.add(intersectionPoint,0);
+                                }
+                            }
+                            if(EnableSaddlePointSolver && THRESHOLD > Math.abs(y_prime-prevY_prime))
+                            {
+                                if(prevY_prime*y_prime<=0)
+                                {
+                                    double intersectionPoint = Solver.solve(derFunc, doubleDerFunc, prevX, x);
+                                    if(Math.abs(y - func.evaluate(intersectionPoint))<0.01)
+                                        pointSeries.add(intersectionPoint,y);
                                 }
                             }
                             series.add(x, y);
                             points++;
                         }
+                        prevY_prime = y_prime;
                         prevX = x;
                         prevY = y;
                     } catch (Exception ignored) {}
@@ -75,8 +106,8 @@ public class Plotter {
             //System.out.println("chartxmin: "+ chart.getXYPlot().getDomainAxis().getUpperBound() + "| chartxMax "+chart.getXYPlot().getDomainAxis().getUpperBound());
             //System.out.println(" -> " + func.getExpressionString() + ": " + points + " points");
             dataset.addSeries(series);
-            if(EnableZeroesSolver)
-            pointDataset.addSeries(pointSeries);
+            if(EnableZeroesSolver || EnableSaddlePointSolver)
+                pointDataset.addSeries(pointSeries);
             xMinBound = xMin;
             xMaxBound = xMax;
     }  
@@ -85,13 +116,9 @@ public class Plotter {
         XYPlot plot = chart.getXYPlot();
 
         // Define colors
-        Color[] colors = {
-            Color.RED, Color.BLUE, Color.GREEN, Color.ORANGE, Color.MAGENTA,
-            Color.CYAN, Color.PINK, Color.YELLOW, Color.GRAY, Color.DARK_GRAY
-        };
-
+        
         // === LINE DATASET RENDERER (dataset index 0) ===
-        XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer();
+        
 
         // Set properties for line renderer (lines only)
         for (int i = 0; i < dataset.getSeriesCount(); i++) {
@@ -110,14 +137,14 @@ public class Plotter {
         }
 
         // Assign line dataset and renderer
-        plot.setDataset(1, dataset);
-        plot.setRenderer(1, lineRenderer);
+        plot.setDataset(0, dataset);
+        plot.setRenderer(0, lineRenderer);
 
-        // === POINT DATASET RENDERER (dataset index 1) ===
-        XYLineAndShapeRenderer pointRenderer = new XYLineAndShapeRenderer(false, true); // points only
+        // === POINT DATASET RENDERER (dataset index 2) ===
+       
 
         // Customize point appearance (e.g. small dots)
-        if(EnableZeroesSolver)
+        if(EnableZeroesSolver || EnableSaddlePointSolver)
         for (int i = 0; i < pointDataset.getSeriesCount(); i++) {
             pointRenderer.setSeriesPaint(i, colors[(i + dataset.getSeriesCount()) % colors.length]);
             pointRenderer.setSeriesShape(i, new java.awt.geom.Ellipse2D.Double(-2, -2, 4, 4)); // small circle
@@ -131,13 +158,20 @@ public class Plotter {
             );
             pointRenderer.setDefaultToolTipGenerator(pointToolTipGenerator);
         }
+        else
+            pointRenderer.setDefaultToolTipGenerator(null);
 
-        // Assign point dataset and renderer
-        if(EnableZeroesSolver)
-        {plot.setDataset(0, pointDataset);
-        plot.setRenderer(0, pointRenderer);}
-
-        // Force chart refresh
+        if(EnableZeroesSolver || EnableSaddlePointSolver)
+        {plot.setDataset(1, pointDataset);
+        plot.setRenderer(1, pointRenderer);}
+        else
+        {
+            {
+                plot.setDataset(1, null);     
+                plot.setRenderer(1, null);    
+            }
+        }
+        plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
         chart.fireChartChanged();
     }
     

@@ -21,7 +21,10 @@ import Classes.Plotter;
 public class ControlPanel {
     private static List<ExpressionFunction> expressions;
     private static List<ExpressionFunction> derivativeExpressions;
+    private static List<ExpressionFunction> doubleDerExpressions;
    // private static int count = 0;
+   public static boolean zeroesSolver = false;
+   public static boolean saddleSolver = false;
     
     public static class FunctionRow {
         private  JTextField functionField;
@@ -123,6 +126,7 @@ public class ControlPanel {
     {
         expressions = new ArrayList<>();
         derivativeExpressions = new ArrayList<>();
+        doubleDerExpressions = new ArrayList<>();
         for (JTextField field : functionFields) {
             String expr = field.getText(); // always gets current text
             System.out.println(expr);
@@ -130,14 +134,16 @@ public class ControlPanel {
             expressions.add(function);
             expr = ExpressionFunction.derivative(expr);
             derivativeExpressions.add(new ExpressionFunction(expr));
+            expr = ExpressionFunction.derivative(expr);
+            doubleDerExpressions.add(new ExpressionFunction(expr));
         }
-
-        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
+        
+        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions,doubleDerExpressions);
     }
 
     public static void zoom(JFreeChart chart,XYSeriesCollection dataset)
     {
-        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
+        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions,doubleDerExpressions);
     }
 
     public static void resetZoom(JFreeChart chart,XYSeriesCollection dataset)
@@ -147,7 +153,7 @@ public class ControlPanel {
     // Set default fixed bounds (X: -10 to 10, Y: -10 to 10)
         plot.getDomainAxis().setRange(-10, 10);
         plot.getRangeAxis().setRange(-10, 10);
-        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
+        Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions,doubleDerExpressions);
     }
 
     public static void manualZoom(JFreeChart chart, XYSeriesCollection dataset)
@@ -181,7 +187,7 @@ public class ControlPanel {
                 XYPlot plot = chart.getXYPlot();
                 plot.getDomainAxis().setRange(xMin, xMax);
                 plot.getRangeAxis().setRange(yMin, yMax);
-                Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions);
+                Plotter.plotExpressions(dataset, expressions, chart,derivativeExpressions,doubleDerExpressions);
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Invalid input. Please enter valid numbers.");
             }
@@ -200,9 +206,16 @@ public class ControlPanel {
        ControlPanel.plotAll(functionFields, dataset, GUI_init.chart);
 
     }
-    public static void togglePoints(List<JTextField> functionFields,XYSeriesCollection dataset,JFreeChart chart)
-    {
+    public static void toggleZeroes(List<JTextField> functionFields,XYSeriesCollection dataset,JFreeChart chart)
+    {   
         Plotter.EnableZeroesSolver = !Plotter.EnableZeroesSolver;
+        ControlPanel.zeroesSolver = !ControlPanel.zeroesSolver;
+        ControlPanel.plotAll(functionFields, dataset, GUI_init.chart);
+    }
+    public static void toggleSaddle(List<JTextField> functionFields,XYSeriesCollection dataset,JFreeChart chart)
+    {   
+        Plotter.EnableSaddlePointSolver = !Plotter.EnableSaddlePointSolver;
+        ControlPanel.saddleSolver = !ControlPanel.saddleSolver;
         ControlPanel.plotAll(functionFields, dataset, GUI_init.chart);
     }
 }

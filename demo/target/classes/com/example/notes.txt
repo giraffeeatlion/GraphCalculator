@@ -1,0 +1,6 @@
+Zoom Logic refined but still looks little odd but using the timer is a much better.
+Solver uses the same function for saddle point finding.
+Solver is fine but the refinement can be done with Plotter.
+Still have to find a way to plot area.
+Saddle points and zeroes are in the same exact place (have to add an extra series). Refinement can be done with adding a seperate method for dealing with series ka things.
+Saddle points and zeroes are not calculated if xbounds are more than 50.
